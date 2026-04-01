@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SegmentIQ — Customer Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:       #f7f5f0;
+  --white:    #ffffff;
+  --paper:    #faf9f6;
+  --border:   #e5e0d8;
+  --border2:  #d4cdc2;
+  --green:    #1a4a35;
+  --green2:   #2d6e52;
+  --green3:   #3d8f6a;
+  --green4:   #e8f2ed;
+  --ink:      #1a1a18;
+  --ink2:     #3d3d38;
+  --muted:    #7a7568;
+  --muted2:   #a09890;
+  --red:      #c0392b;
+  --red2:     #fdf0ee;
+  --orange:   #d35400;
+  --orange2:  #fef3ee;
+  --blue:     #1a3a5c;
+  --blue2:    #eef3f8;
+  --gold:     #b8860b;
+  --gold2:    #fdf8ee;
+  --purple:   #5b2c6f;
+  --purple2:  #f5f0f8;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+}
+
+/* Subtle paper texture via repeating pattern */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8c0b0' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;
+}
+
+/* ══ UPLOAD ═════════════════════════════════════════════════════════════ */
+#uploadScreen{
+  position:relative;z-index:1;
+  min-height:100vh;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+}
+
+.upload-left{
+  background:var(--green);
+  padding:4rem 3.5rem;
+  display:flex;flex-direction:column;justify-content:center;
+  position:relative;overflow:hidden;
+}
+
+.upload-left::before{
+  content:'';
+  position:absolute;
+  top:-120px;right:-120px;
+  width:400px;height:400px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,0.08);
+}
+.upload-left::after{
+  content:'';
+  position:absolute;
+  bottom:-80px;left:-80px;
+  width:280px;height:280px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,0.06);
+}
+
+.brand-mark{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  margin-bottom:3rem;
+}
+.brand-sq{width:10px;height:10px;background:#a8d5b5;}
+.brand-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.7rem;color:rgba(255,255,255,0.5);letter-spacing:0.2em;text-transform:uppercase;}
+
+.left-headline{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2.8rem,5vw,4.5rem);
+  font-weight:900;
+  color:#ffffff;
+  line-height:1.05;
+  letter-spacing:-0.02em;
+  margin-bottom:1.2rem;
+}
+
+.left-headline span{
+  color:#a8d5b5;
+  font-style:italic;
+}
+
+.left-sub{
+  font-size:1rem;
+  color:rgba(255,255,255,0.6);
+  line-height:1.7;
+  max-width:380px;
+  margin-bottom:2.5rem;
+  font-weight:300;
+}
+
+.feature-list{display:flex;flex-direction:column;gap:0.6rem;}
+.feat-item{
+  display:flex;align-items:center;gap:0.75rem;
+  font-size:0.85rem;color:rgba(255,255,255,0.7);
+}
+.feat-dot{width:6px;height:6px;background:#a8d5b5;border-radius:50%;flex-shrink:0;}
+
+.upload-right{
+  background:var(--paper);
+  padding:4rem 3.5rem;
+  display:flex;flex-direction:column;justify-content:center;
+  position:relative;z-index:1;
+}
+
+.right-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.8rem;font-weight:700;
+  color:var(--ink);margin-bottom:0.4rem;
+}
+.right-sub{font-size:0.82rem;color:var(--muted);margin-bottom:2rem;font-weight:300;}
+
+.field-group{margin-bottom:1.4rem;}
+.field-label{font-size:0.68rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;display:block;}
+
+.field-input{
+  width:100%;
+  background:var(--white);
+  border:1.5px solid var(--border);
+  border-radius:6px;
+  padding:0.75rem 1rem;
+  color:var(--ink);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:0.88rem;
+  outline:none;transition:border-color 0.2s;
+}
+.field-input:focus{border-color:var(--green);}
+.field-input::placeholder{color:var(--muted2);}
+
+.upload-zone{
+  background:var(--white);
+  border:2px dashed var(--border2);
+  border-radius:8px;
+  padding:2rem 1.5rem;
+  text-align:center;
+  cursor:pointer;
+  transition:all 0.25s;
+}
+.upload-zone:hover{border-color:var(--green);background:#f0f7f3;}
+.upload-zone.filled{border-style:solid;border-color:var(--green3);background:#f0f7f3;}
+
+.uz-icon{
+  width:44px;height:44px;
+  background:var(--green4);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 0.8rem;
+  font-size:1.2rem;
+}
+.uz-title{font-size:0.82rem;font-weight:600;color:var(--ink2);margin-bottom:0.2rem;}
+.uz-sub{font-size:0.72rem;color:var(--muted);}
+.uz-status{margin-top:0.6rem;font-size:0.72rem;color:var(--green2);font-weight:500;min-height:1rem;}
+.file-input{display:none;}
+
+.btn-row{display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;flex-wrap:wrap;gap:0.8rem;}
+.sample-txt{font-size:0.75rem;color:var(--muted);}
+.sample-txt a{color:var(--green2);cursor:pointer;font-weight:500;}
+.sample-txt a:hover{color:var(--green);}
+
+.run-btn{
+  background:var(--green);
+  color:white;
+  border:none;
+  padding:0.8rem 2.2rem;
+  border-radius:6px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:0.88rem;font-weight:600;
+  cursor:pointer;transition:all 0.2s;
+  letter-spacing:0.01em;
+}
+.run-btn:hover{background:var(--green2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(26,74,53,0.25);}
+.run-btn:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none;}
+
+.format-note{
+  margin-top:1.8rem;
+  background:var(--white);
+  border:1px solid var(--border);
+  border-left:3px solid var(--green);
+  border-radius:4px;
+  padding:1rem 1.2rem;
+}
+.fn-title{font-size:0.65rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;}
+.fn-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;}
+.fn-col h6{font-size:0.65rem;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.35rem;}
+.fn-col code{font-family:'Courier New',monospace;font-size:0.63rem;color:var(--muted);line-height:1.9;display:block;}
+.req-col{color:var(--green2) !important;font-weight:700;}
+
+/* ══ DASHBOARD ══════════════════════════════════════════════════════════ */
+#dashboard{display:none;position:relative;z-index:1;min-height:100vh;}
+
+/* SIDEBAR + MAIN layout */
+.dash-layout{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  background:var(--green);
+  padding:0;
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+
+.sb-brand{
+  padding:1.8rem 1.5rem 1.2rem;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+.sb-logo{
+  font-family:'Playfair Display',serif;
+  font-size:1.85rem;font-weight:900;
+  color:white;letter-spacing:-0.01em;
+  line-height:1;
+}
+.sb-logo .iq{
+  color:#a8d5b5;
+  font-style:italic;
+  margin-left:0.06em;
+  letter-spacing:0.04em;
+}
+.sb-company{font-size:0.68rem;color:rgba(255,255,255,0.5);margin-top:0.2rem;font-weight:300;}
+
+.sb-nav{padding:1.2rem 0;flex:1;}
+.sb-section{font-size:0.58rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.15em;padding:0 1.5rem;margin-bottom:0.4rem;margin-top:0.8rem;}
+
+.sb-item{
+  display:flex;align-items:center;gap:0.75rem;
+  padding:0.65rem 1.5rem;
+  cursor:pointer;transition:all 0.15s;
+  color:rgba(255,255,255,0.6);font-size:0.8rem;font-weight:400;
+  border-left:2px solid transparent;
+}
+.sb-item:hover{color:white;background:rgba(255,255,255,0.06);}
+.sb-item.active{color:white;background:rgba(255,255,255,0.1);border-left-color:#a8d5b5;font-weight:600;}
+.sb-icon{font-size:0.9rem;width:18px;text-align:center;}
+
+.sb-footer{
+  padding:1.2rem 1.5rem;
+  border-top:1px solid rgba(255,255,255,0.1);
+}
+.sb-back{
+  font-size:0.72rem;color:rgba(255,255,255,0.45);cursor:pointer;
+  transition:color 0.15s;
+}
+.sb-back:hover{color:rgba(255,255,255,0.8);}
+.sb-export{
+  width:100%;margin-top:0.6rem;
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.2);
+  color:white;border-radius:5px;
+  padding:0.6rem;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.2s;
+}
+.sb-export:hover{background:rgba(255,255,255,0.2);}
+
+/* MAIN */
+.dash-main{
+  background:var(--bg);
+  padding:2rem 2.5rem;
+  overflow-y:auto;
+}
+
+.page-header{margin-bottom:1.8rem;}
+.page-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.6rem;font-weight:700;
+  color:var(--ink);letter-spacing:-0.02em;
+  margin-bottom:0.2rem;
+}
+.page-sub{font-size:0.78rem;color:var(--muted);font-weight:300;}
+
+/* KPI STRIP */
+.kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:0.8rem;margin-bottom:1.5rem;}
+.kpi{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:1rem 1.1rem;
+  border-top:3px solid var(--kc,var(--green));
+  transition:transform 0.15s,box-shadow 0.15s;
+}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.06);}
+.kpi-label{font-size:0.62rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;}
+.kpi-val{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--ink);line-height:1;}
+.kpi-sub{font-size:0.62rem;color:var(--muted2);margin-top:0.2rem;}
+
+/* CARDS */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;}
+
+.card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:1.3rem;
+  animation:slideUp 0.3s ease both;
+}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.card-title{font-size:0.78rem;font-weight:700;color:var(--ink2);letter-spacing:0.01em;}
+.tag{font-size:0.6rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:100px;}
+.tag-green{background:var(--green4);color:var(--green2);}
+.tag-red{background:var(--red2);color:var(--red);}
+.tag-blue{background:var(--blue2);color:var(--blue);}
+.tag-gold{background:var(--gold2);color:var(--gold);}
+.tag-purple{background:var(--purple2);color:var(--purple);}
+.tag-orange{background:var(--orange2);color:var(--orange);}
+
+.chart-h200{position:relative;height:200px;}
+.chart-h240{position:relative;height:240px;}
+.chart-h160{position:relative;height:160px;}
+
+/* SEGMENT CARDS */
+.seg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.8rem;margin-bottom:1rem;}
+.seg-card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:8px;padding:1rem 1.1rem;
+  border-left:4px solid var(--sc,var(--green));
+  transition:transform 0.15s,box-shadow 0.15s;cursor:default;
+}
+.seg-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.07);}
+.sc-name{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;}
+.sc-count{font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--ink);line-height:1;}
+.sc-pct{font-size:0.65rem;color:var(--muted);margin-top:0.15rem;}
+.sc-rev{font-size:0.68rem;font-weight:500;margin-top:0.3rem;}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:0.77rem;}
+.data-table th{
+  text-align:left;padding:0.55rem 0.8rem;
+  font-size:0.62rem;font-weight:700;
+  color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;
+  background:var(--bg);border-bottom:2px solid var(--border);
+}
+.data-table td{padding:0.65rem 0.8rem;border-bottom:1px solid var(--border);}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:#f9f7f3;}
+.seg-pill{font-size:0.6rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:100px;}
+
+/* RECS */
+.rec-item{
+  border:1px solid var(--border);border-radius:8px;
+  padding:1.1rem 1.2rem;margin-bottom:0.8rem;
+  display:flex;gap:1rem;align-items:flex-start;
+  background:var(--white);transition:border-color 0.2s,box-shadow 0.2s;
+}
+.rec-item:hover{border-color:var(--green3);box-shadow:0 2px 12px rgba(26,74,53,0.08);}
+.rec-num{
+  font-family:'Playfair Display',serif;
+  font-size:1.5rem;font-weight:900;
+  color:var(--green);min-width:32px;line-height:1;
+}
+.rec-seg{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.2rem;}
+.rec-title{font-size:0.85rem;font-weight:700;color:var(--ink);margin-bottom:0.3rem;}
+.rec-text{font-size:0.73rem;color:var(--muted);line-height:1.6;}
+.impact-tag{display:inline-block;margin-top:0.4rem;font-size:0.6rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:100px;}
+
+/* PROGRESS */
+.prog-item{margin-bottom:0.85rem;}
+.prog-row{display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:0.3rem;color:var(--ink2);}
+.prog-bar{height:5px;background:var(--border);border-radius:100px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:100px;transition:width 1s ease;}
+
+/* INSIGHT BOX */
+.insight-box{
+  background:var(--green4);
+  border:1px solid #b8ddc7;
+  border-left:3px solid var(--green2);
+  border-radius:6px;padding:0.9rem 1rem;
+  margin-top:0.8rem;
+}
+.insight-label{font-size:0.6rem;font-weight:700;color:var(--green2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem;}
+.insight-text{font-size:0.75rem;color:var(--ink2);line-height:1.55;}
+
+.empty{text-align:center;color:var(--muted);font-size:0.8rem;padding:2.5rem;}
+
+footer{
+  text-align:center;font-size:0.65rem;color:var(--muted2);
+  margin-top:2rem;padding:1.2rem 0;
+  border-top:1px solid var(--border);
+}
+
+@keyframes slideUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+@media(max-width:1100px){
+  .kpi-strip{grid-template-columns:repeat(3,1fr);}
+  .dash-layout{grid-template-columns:1fr;}
+  .sidebar{height:auto;position:static;flex-direction:row;flex-wrap:wrap;}
+}
+@media(max-width:820px){
+  #uploadScreen{grid-template-columns:1fr;}
+  .upload-left{padding:2.5rem 2rem;min-height:280px;}
+  .upload-right{padding:2.5rem 2rem;}
+  .grid2,.grid3,.seg-grid,.fn-grid{grid-template-columns:1fr;}
+  .kpi-strip{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ UPLOAD ════════════════════════════════════════════════════════════ -->
+<div id="uploadScreen">
+
+  <!-- LEFT PANEL — BRAND -->
+  <div class="upload-left" style="justify-content:center;padding-top:3rem;">
+
+    <div style="font-family:'Playfair Display',serif;font-size:clamp(3.8rem,5vw,4.8rem);font-weight:900;color:#ffffff;line-height:1;letter-spacing:-0.02em;margin-bottom:0.5rem;">
+      Segment<span style="color:#a8d5b5;font-style:italic;letter-spacing:0.02em;">IQ</span>
+    </div>
+
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.78rem;color:rgba(168,213,181,0.8);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:1.8rem;">Customer Intelligence Platform</div>
+
+    <div class="left-headline" style="font-size:clamp(1.8rem,2.5vw,2.4rem);margin-bottom:1.2rem;">
+      Know your<br>customers.<br><span>Deeply.</span>
+    </div>
+
+    <p class="left-sub">
+      Upload your transaction data and get a full RFM segmentation analysis in seconds. Free. No code. No login. Built for businesses that want to grow smarter.
+    </p>
+
+    <div class="feature-list">
+      <div class="feat-item"><div class="feat-dot"></div>RFM scoring — Recency, Frequency, Monetary</div>
+      <div class="feat-item"><div class="feat-dot"></div>8 automatic customer segments</div>
+      <div class="feat-item"><div class="feat-dot"></div>Top 10 most valuable customers</div>
+      <div class="feat-item"><div class="feat-dot"></div>At-risk customer alerts</div>
+      <div class="feat-item"><div class="feat-dot"></div>6 strategic recommendations from your data</div>
+      <div class="feat-item"><div class="feat-dot"></div>Professional PDF report export</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL — FORM -->
+  <div class="upload-right">
+    <div class="right-title">Start Your Analysis</div>
+    <p class="right-sub">Upload your customer transaction CSV to begin</p>
+
+    <div class="field-group">
+      <label class="field-label">Business Name</label>
+      <input type="text" class="field-input" id="bizName" placeholder="e.g. Zomato, My Store, D2C Brand..."/>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Customer Transaction Data</label>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFile').click()">
+        <div class="uz-icon">📂</div>
+        <div class="uz-title">Click to upload your CSV file</div>
+        <div class="uz-sub">customer_id · purchase_date · amount</div>
+        <input type="file" class="file-input" id="csvFile" accept=".csv" onchange="handleCSV(this)"/>
+        <div class="uz-status" id="uzStatus">No file selected</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <p class="sample-txt">No data? <a onclick="loadSample()">Use sample dataset →</a></p>
+      <button class="run-btn" id="runBtn" onclick="runAnalysis()" disabled>Run Analysis →</button>
+    </div>
+
+    <div class="format-note">
+      <div class="fn-title">Required CSV Format</div>
+      <div class="fn-grid">
+        <div class="fn-col">
+          <h6>Required</h6>
+          <code>
+            <span class="req-col">customer_id</span><br>
+            <span class="req-col">purchase_date</span> (YYYY-MM-DD)<br>
+            <span class="req-col">amount</span> (transaction value)
+          </code>
+        </div>
+        <div class="fn-col">
+          <h6>Optional</h6>
+          <code>
+            customer_name<br>
+            product_category<br>
+            city
+          </code>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ════════════════════════════════════════════════════════ -->
+<div id="dashboard">
+<div class="dash-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">Segment<span class="iq">IQ</span></div>
+      <div class="sb-company" id="sbCompany">—</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Analysis</div>
+      <div class="sb-item active" onclick="switchTab('overview')"><span class="sb-icon">◈</span>Overview</div>
+      <div class="sb-item" onclick="switchTab('segments')"><span class="sb-icon">◑</span>Segments</div>
+      <div class="sb-item" onclick="switchTab('customers')"><span class="sb-icon">◉</span>Top Customers</div>
+      <div class="sb-section">Strategy</div>
+      <div class="sb-item" onclick="switchTab('recs')"><span class="sb-icon">◆</span>Recommendations</div>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-back" onclick="goBack()">← New Analysis</div>
+      <button class="sb-export" onclick="exportPDF()">↓ Export PDF Report</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="dash-main">
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <!-- OVERVIEW -->
+    <div id="tabOverview">
+      <div class="page-header">
+        <div class="page-title">Customer Overview</div>
+        <div class="page-sub" id="overviewSub">—</div>
+      </div>
+      <div class="seg-grid" id="segCards"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Segment Distribution</span><span class="tag tag-green">By Customers</span></div>
+          <div class="chart-h240"><canvas id="segPieChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Revenue by Segment</span><span class="tag tag-green">Total Spend</span></div>
+          <div class="chart-h240"><canvas id="revBarChart"></canvas></div>
+        </div>
+      </div>
+      <div class="grid3">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Avg Purchase Frequency</span><span class="tag tag-blue">Orders / Customer</span></div>
+          <div class="chart-h160"><canvas id="freqChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Avg Order Value</span><span class="tag tag-gold">Per Segment</span></div>
+          <div class="chart-h160"><canvas id="aovChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Monthly Revenue Trend</span><span class="tag tag-green">All Customers</span></div>
+          <div class="chart-h160"><canvas id="trendChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEGMENTS -->
+    <div id="tabSegments" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Segment Deep Dive</div>
+        <div class="page-sub">RFM scoring breakdown and segment health metrics</div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Recency vs Spend (Bubble = Frequency)</span><span class="tag tag-blue">RFM Scatter</span></div>
+          <div class="chart-h240"><canvas id="rfmScatterChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Revenue Share per Segment</span><span class="tag tag-green">% Contribution</span></div>
+          <div id="segHealthList" style="padding-top:0.3rem"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-head"><span class="card-title">Full Segment Breakdown</span><span class="tag tag-green">All Metrics</span></div>
+        <table class="data-table">
+          <thead><tr><th>Segment</th><th>Customers</th><th>% Base</th><th>Total Revenue</th><th>Avg Order Value</th><th>Avg Orders</th><th>Avg Recency</th></tr></thead>
+          <tbody id="segBreakTable"></tbody>
+        </table>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Recency Distribution</span><span class="tag tag-red">Days Since Last Purchase</span></div>
+          <div class="chart-h200"><canvas id="recencyChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Spend Distribution</span><span class="tag tag-green">Customer Value Buckets</span></div>
+          <div class="chart-h200"><canvas id="monetaryChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP CUSTOMERS -->
+    <div id="tabCustomers" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Customer Intelligence</div>
+        <div class="page-sub">Your most valuable customers and those needing immediate attention</div>
+      </div>
+      <div class="grid2" style="margin-bottom:1rem">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Top 10 Most Valuable Customers</span><span class="tag tag-gold">By Total Spend</span></div>
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Customer</th><th>Segment</th><th>Total Spend</th><th>Orders</th><th>Last Purchase</th><th>Score</th></tr></thead>
+            <tbody id="top10Table"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">At-Risk Customers</span><span class="tag tag-red">Needs Attention</span></div>
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Customer</th><th>Last Purchase</th><th>Total Spend</th><th>Orders</th></tr></thead>
+            <tbody id="atRiskTable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Top Customers by Revenue</span><span class="tag tag-green">Bar Chart</span></div>
+          <div class="chart-h240"><canvas id="top10Chart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Customer Value Tiers</span><span class="tag tag-blue">Spend Segments</span></div>
+          <div class="chart-h240"><canvas id="tierChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <div id="tabRecs" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Strategic Recommendations</div>
+        <div class="page-sub">Data-driven actions based on your actual customer segments</div>
+      </div>
+      <div class="grid2">
+        <div style="grid-column:1/-1">
+          <div id="recList"></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Pareto Analysis</span><span class="tag tag-gold">Revenue Concentration</span></div>
+          <div id="paretoInfo" style="padding-top:0.3rem"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Benchmark vs Industry</span><span class="tag tag-green">E-commerce Averages</span></div>
+          <div id="benchmarkInfo" style="padding-top:0.3rem"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      SegmentIQ &nbsp;·&nbsp; <span id="footerBiz">—</span> &nbsp;·&nbsp; RFM Customer Segmentation &nbsp;·&nbsp; Built by <strong>Rishit Jain</strong> &nbsp;·&nbsp; BBA Finance & Marketing Analytics &nbsp;·&nbsp; Christ University Bangalore
+    </footer>
+
+  </main>
+</div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let rawData=null,rfmData=null,segments=null,bizName='';
+let charts={};
+
+const SEG={
+  'Champions':     {color:'#1a4a35',bg:'#e8f2ed',desc:'Buy often, spend big, recent'},
+  'Loyal':         {color:'#2d6e52',bg:'#edf5f0',desc:'Regular buyers, strong spend'},
+  'Potential':     {color:'#1a3a5c',bg:'#eef3f8',desc:'Recent, growth potential'},
+  'New Customers': {color:'#5b2c6f',bg:'#f5f0f8',desc:'First purchase made'},
+  'At Risk':       {color:'#c0392b',bg:'#fdf0ee',desc:'Gone quiet, needs win-back'},
+  'Cant Lose':     {color:'#d35400',bg:'#fef3ee',desc:'High value, slipping away'},
+  'Hibernating':   {color:'#7a7568',bg:'#f5f3ef',desc:'Low activity, low recency'},
+  'Lost':          {color:'#a09890',bg:'#f7f5f1',desc:'No purchase in a long time'},
+};
+
+const fmt=n=>{n=parseFloat(n)||0;return n>=1e7?(n/1e7).toFixed(1)+'Cr':n>=1e5?(n/1e5).toFixed(1)+'L':n>=1000?(n/1000).toFixed(1)+'K':Math.round(n).toString();};
+const fmtCur=n=>'₹'+fmt(n);
+const daysDiff=(d1,d2)=>Math.round((d2-d1)/(1000*60*60*24));
+
+Chart.defaults.color='#7a7568';
+Chart.defaults.font.family='Plus Jakarta Sans';
+Chart.defaults.borderColor='#e5e0d8';
+
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+// ── FILE HANDLER ───────────────────────────────────────────────────────────
+function handleCSV(input){
+  const file=input.files[0];if(!file)return;
+  Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>{
+    rawData=res.data;
+    document.getElementById('uzStatus').textContent=`✓ ${file.name} — ${res.data.length} rows`;
+    document.getElementById('uploadZone').classList.add('filled');
+    document.getElementById('runBtn').disabled=false;
+  }});
+}
+
+// ── SAMPLE DATA ────────────────────────────────────────────────────────────
+function loadSample(){
+  const names=['Rahul Sharma','Priya Mehta','Arjun Kumar','Sneha Tiwari','Vikram Rao','Anjali Patel','Karan Bose','Meera Nair','Rohit Gupta','Divya Lal','Aditya Verma','Pooja Singh','Siddharth Roy','Kavya Menon','Nikhil Agarwal','Shreya Banerjee','Manish Tripathi','Riya Pillai','Gaurav Seth','Ananya Krishnan','Deepak Rajan','Nisha Mohan','Rahul Bajaj','Preethi Suresh','Akash Vyas','Sunita Kapoor','Vinay Reddy','Lakshmi Pai','Suresh Mahajan','Anjana Thomas'];
+  const cats=['Electronics','Fashion','Groceries','Beauty','Home Decor','Sports','Books','Food & Bev'];
+  const cities=['Mumbai','Delhi','Bangalore','Hyderabad','Chennai','Pune','Kolkata','Ahmedabad'];
+  const rows=[];
+  const today=new Date('2024-12-31');
+
+  names.forEach((name,i)=>{
+    const cid=`C${String(i+1).padStart(3,'0')}`;
+    const profile=['champion','champion','champion','champion','champion','loyal','loyal','loyal','loyal','potential','potential','potential','potential','new','new','new','new','atrisk','atrisk','atrisk','atrisk','cantlose','cantlose','cantlose','hibernating','hibernating','hibernating','lost','lost','lost'][i];
+    let numOrders,daysSinceLast,maxAmt;
+    if(profile==='champion'){numOrders=10+Math.floor(Math.random()*8);daysSinceLast=5+Math.floor(Math.random()*20);maxAmt=8000;}
+    else if(profile==='loyal'){numOrders=6+Math.floor(Math.random()*5);daysSinceLast=15+Math.floor(Math.random()*35);maxAmt=5000;}
+    else if(profile==='potential'){numOrders=3+Math.floor(Math.random()*3);daysSinceLast=20+Math.floor(Math.random()*40);maxAmt=3500;}
+    else if(profile==='new'){numOrders=1;daysSinceLast=5+Math.floor(Math.random()*25);maxAmt=2500;}
+    else if(profile==='atrisk'){numOrders=5+Math.floor(Math.random()*4);daysSinceLast=65+Math.floor(Math.random()*55);maxAmt=4500;}
+    else if(profile==='cantlose'){numOrders=8+Math.floor(Math.random()*5);daysSinceLast=55+Math.floor(Math.random()*45);maxAmt=10000;}
+    else if(profile==='hibernating'){numOrders=2+Math.floor(Math.random()*2);daysSinceLast=130+Math.floor(Math.random()*60);maxAmt=1800;}
+    else{numOrders=1+Math.floor(Math.random()*2);daysSinceLast=210+Math.floor(Math.random()*80);maxAmt=1200;}
+
+    for(let o=0;o<numOrders;o++){
+      const daysAgo=o===0?daysSinceLast:daysSinceLast+Math.floor(25+Math.random()*55*(o+1));
+      const d=new Date(today);d.setDate(d.getDate()-daysAgo);
+      const amt=Math.round(400+Math.random()*maxAmt);
+      rows.push({customer_id:cid,customer_name:name,purchase_date:d.toISOString().split('T')[0],amount:amt,product_category:cats[Math.floor(Math.random()*cats.length)],city:cities[i%cities.length]});
+    }
+  });
+
+  rawData=rows;
+  document.getElementById('uzStatus').textContent=`✓ Sample data — ${rows.length} transactions, 30 customers`;
+  document.getElementById('uploadZone').classList.add('filled');
+  document.getElementById('bizName').value='Sample Brand Co.';
+  document.getElementById('runBtn').disabled=false;
+}
+
+// ── RFM ENGINE ─────────────────────────────────────────────────────────────
+function computeRFM(){
+  const today=new Date();
+  const cMap={};
+  rawData.forEach(row=>{
+    const id=(row.customer_id||'').trim();
+    const dt=new Date(row.purchase_date);
+    const amt=parseFloat(row.amount)||0;
+    if(!id||isNaN(dt)||amt<=0)return;
+    if(!cMap[id])cMap[id]={id,name:(row.customer_name||id).trim(),dates:[],totalAmt:0};
+    cMap[id].dates.push(dt);
+    cMap[id].totalAmt+=amt;
+  });
+
+  const customers=Object.values(cMap).map(c=>{
+    const sorted=c.dates.sort((a,b)=>b-a);
+    return{...c,recency:daysDiff(sorted[0],today),frequency:sorted.length,monetary:c.totalAmt,lastDate:sorted[0].toISOString().split('T')[0],avgOrder:c.totalAmt/sorted.length};
+  });
+
+  const pctScore=(val,arr,rev=false)=>{
+    const s=[...arr].sort((a,b)=>a-b);
+    const p=s.indexOf(val)/s.length;
+    return Math.min(Math.ceil((rev?1-p:p)*5)||1,5);
+  };
+
+  const R=customers.map(c=>c.recency),F=customers.map(c=>c.frequency),M=customers.map(c=>c.monetary);
+  customers.forEach(c=>{
+    c.rScore=pctScore(c.recency,R,true);
+    c.fScore=pctScore(c.frequency,F);
+    c.mScore=pctScore(c.monetary,M);
+    c.rfmTotal=c.rScore+c.fScore+c.mScore;
+    c.segment=assignSeg(c.rScore,c.fScore,c.mScore);
+  });
+  return customers;
+}
+
+function assignSeg(r,f,m){
+  if(r>=4&&f>=4&&m>=4)return'Champions';
+  if(r>=3&&f>=4)return'Loyal';
+  if(r>=4&&f<=2)return'New Customers';
+  if(r>=3&&f>=2&&m>=3)return'Potential';
+  if(r<=2&&f>=3&&m>=3)return'At Risk';
+  if(r<=2&&f>=4&&m>=4)return'Cant Lose';
+  if(r<=2&&f<=2&&m<=2)return'Lost';
+  return'Hibernating';
+}
+
+function groupSegs(customers){
+  const map={};
+  customers.forEach(c=>{
+    if(!map[c.segment])map[c.segment]={name:c.segment,customers:[],totalRev:0,totalOrders:0,totalRecency:0};
+    map[c.segment].customers.push(c);
+    map[c.segment].totalRev+=c.monetary;
+    map[c.segment].totalOrders+=c.frequency;
+    map[c.segment].totalRecency+=c.recency;
+  });
+  Object.values(map).forEach(s=>{
+    s.count=s.customers.length;
+    s.avgOrder=s.totalRev/s.totalOrders;
+    s.avgFreq=s.totalOrders/s.count;
+    s.avgRecency=s.totalRecency/s.count;
+  });
+  return map;
+}
+
+// ── RUN ────────────────────────────────────────────────────────────────────
+function runAnalysis(){
+  bizName=document.getElementById('bizName').value.trim()||'Your Business';
+  rfmData=computeRFM();
+  segments=groupSegs(rfmData);
+
+  document.getElementById('uploadScreen').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  document.getElementById('sbCompany').textContent=bizName;
+  document.getElementById('footerBiz').textContent=bizName;
+
+  const totalRev=rfmData.reduce((s,c)=>s+c.monetary,0);
+  const totalOrders=rfmData.reduce((s,c)=>s+c.frequency,0);
+  document.getElementById('overviewSub').textContent=`${rfmData.length} customers · ${rawData.length} transactions · ${fmtCur(totalRev)} total revenue`;
+
+  Object.keys(charts).forEach(k=>dc(k));
+  buildKPIs();
+  buildSegCards();
+  buildOverviewCharts();
+  buildSegTab();
+  buildCustomerTab();
+  buildRecsTab();
+  switchTab('overview');
+}
+
+// ── TABS ───────────────────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  ['tabOverview','tabSegments','tabCustomers','tabRecs'].forEach(id=>document.getElementById(id).style.display='none');
+  const map={overview:0,segments:1,customers:2,recs:3};
+  document.querySelectorAll('.sb-item')[map[tab]].classList.add('active');
+  document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).style.display='block';
+}
+
+// ── KPIs ───────────────────────────────────────────────────────────────────
+function buildKPIs(){
+  const totalRev=rfmData.reduce((s,c)=>s+c.monetary,0);
+  const totalOrders=rfmData.reduce((s,c)=>s+c.frequency,0);
+  const champs=rfmData.filter(c=>c.segment==='Champions');
+  const champRev=champs.reduce((s,c)=>s+c.monetary,0);
+  const kpis=[
+    {label:'Total Customers',val:fmt(rfmData.length),sub:`${rawData.length} transactions`,c:'#1a4a35'},
+    {label:'Total Revenue',val:fmtCur(totalRev),sub:'All time',c:'#2d6e52'},
+    {label:'Avg Order Value',val:fmtCur(totalRev/totalOrders),sub:'Per transaction',c:'#1a3a5c'},
+    {label:'Total Orders',val:fmt(totalOrders),sub:'All customers',c:'#5b2c6f'},
+    {label:'Champions',val:fmt(champs.length),sub:`${Math.round(champs.length/rfmData.length*100)}% of base`,c:'#b8860b'},
+    {label:'Champion Revenue',val:fmtCur(champRev),sub:`${Math.round(champRev/totalRev*100)}% of total`,c:'#c0392b'},
+  ];
+  document.getElementById('kpiStrip').innerHTML=kpis.map(k=>`
+    <div class="kpi" style="--kc:${k.c}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-val">${k.val}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+}
+
+// ── SEGMENT CARDS ──────────────────────────────────────────────────────────
+function buildSegCards(){
+  const total=rfmData.length;
+  const order=['Champions','Loyal','Potential','New Customers','At Risk','Cant Lose','Hibernating','Lost'];
+  document.getElementById('segCards').innerHTML=order.map(n=>{
+    const s=segments[n];
+    const cfg=SEG[n];
+    if(!s)return`<div class="seg-card" style="--sc:${cfg.color}"><div class="sc-name" style="color:${cfg.color}">${n}</div><div class="sc-count" style="color:${cfg.color}">0</div><div class="sc-pct">0% of base</div></div>`;
+    return`<div class="seg-card" style="--sc:${cfg.color}">
+      <div class="sc-name" style="color:${cfg.color}">${n==='Cant Lose'?"Can't Lose":n}</div>
+      <div class="sc-count" style="color:${cfg.color}">${s.count}</div>
+      <div class="sc-pct">${Math.round(s.count/total*100)}% of customers</div>
+      <div class="sc-rev" style="color:${cfg.color}">${fmtCur(s.totalRev)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── OVERVIEW CHARTS ────────────────────────────────────────────────────────
+function buildOverviewCharts(){
+  const order=['Champions','Loyal','Potential','New Customers','At Risk','Cant Lose','Hibernating','Lost'];
+  const labels=order.filter(n=>segments[n]);
+  const colors=labels.map(n=>SEG[n].color);
+  const bgs=labels.map(n=>SEG[n].bg);
+
+  dc('segPieChart');
+  charts.segPieChart=new Chart(document.getElementById('segPieChart'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data:labels.map(n=>segments[n].count),backgroundColor:colors.map(c=>c+'dd'),borderColor:'#ffffff',borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{usePointStyle:true,padding:14,font:{size:11}}}},cutout:'58%'}
+  });
+
+  dc('revBarChart');
+  charts.revBarChart=new Chart(document.getElementById('revBarChart'),{
+    type:'bar',
+    data:{labels,datasets:[{label:'Revenue',data:labels.map(n=>segments[n].totalRev),backgroundColor:colors.map(c=>c+'cc'),borderColor:colors,borderWidth:1,borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f0ece4'},ticks:{callback:v=>fmtCur(v)}},x:{grid:{display:false}}}}
+  });
+
+  dc('freqChart');
+  charts.freqChart=new Chart(document.getElementById('freqChart'),{
+    type:'bar',
+    data:{labels,datasets:[{data:labels.map(n=>+segments[n].avgFreq.toFixed(1)),backgroundColor:bgs,borderColor:colors,borderWidth:1.5,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f0ece4'}},x:{grid:{display:false}}}}
+  });
+
+  dc('aovChart');
+  charts.aovChart=new Chart(document.getElementById('aovChart'),{
+    type:'bar',
+    data:{labels,datasets:[{data:labels.map(n=>+segments[n].avgOrder.toFixed(0)),backgroundColor:colors.map(c=>c+'44'),borderColor:colors,borderWidth:1.5,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f0ece4'},ticks:{callback:v=>fmtCur(v)}},x:{grid:{display:false}}}}
+  });
+
+  const monthMap={};
+  rawData.forEach(r=>{
+    const d=new Date(r.purchase_date);if(isNaN(d))return;
+    const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if(!monthMap[k])monthMap[k]=0;
+    monthMap[k]+=parseFloat(r.amount)||0;
+  });
+  const months=Object.keys(monthMap).sort();
+  dc('trendChart');
+  const ctx=document.getElementById('trendChart').getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,160);g.addColorStop(0,'rgba(26,74,53,0.15)');g.addColorStop(1,'rgba(26,74,53,0)');
+  charts.trendChart=new Chart(ctx,{
+    type:'line',
+    data:{labels:months.map(m=>m.slice(5)),datasets:[{data:months.map(m=>monthMap[m]),borderColor:'#1a4a35',backgroundColor:g,tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:'#1a4a35'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f0ece4'},ticks:{callback:v=>fmtCur(v)}},x:{grid:{display:false}}}}
+  });
+}
+
+// ── SEGMENTS TAB ───────────────────────────────────────────────────────────
+function buildSegTab(){
+  const order=['Champions','Loyal','Potential','New Customers','At Risk','Cant Lose','Hibernating','Lost'];
+  const labels=order.filter(n=>segments[n]);
+  const total=rfmData.length;
+  const totalRev=rfmData.reduce((s,c)=>s+c.monetary,0);
+
+  dc('rfmScatterChart');
+  charts.rfmScatterChart=new Chart(document.getElementById('rfmScatterChart'),{
+    type:'bubble',
+    data:{datasets:labels.map(n=>({
+      label:n,
+      data:segments[n].customers.map(c=>({x:c.recency,y:c.monetary,r:Math.min(4+c.fScore*1.5,14)})),
+      backgroundColor:SEG[n].color+'55',borderColor:SEG[n].color,borderWidth:1.5,
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{usePointStyle:true,padding:10,font:{size:10}}}},scales:{x:{title:{display:true,text:'Recency (days)',color:'#7a7568'},grid:{color:'#f0ece4'}},y:{title:{display:true,text:'Total Spend',color:'#7a7568'},grid:{color:'#f0ece4'},ticks:{callback:v=>fmtCur(v)}}}}
+  });
+
+  document.getElementById('segHealthList').innerHTML=labels.map(n=>{
+    const s=segments[n];
+    const revPct=Math.round(s.totalRev/totalRev*100);
+    return`<div class="prog-item">
+      <div class="prog-row"><span style="font-weight:600;color:${SEG[n].color}">${n==='Cant Lose'?"Can't Lose":n}</span><span style="font-weight:600">${revPct}% of revenue</span></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${revPct}%;background:${SEG[n].color}"></div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('segBreakTable').innerHTML=labels.map(n=>{
+    const s=segments[n];
+    return`<tr>
+      <td><span class="seg-pill" style="background:${SEG[n].bg};color:${SEG[n].color}">${n==='Cant Lose'?"Can't Lose":n}</span></td>
+      <td style="font-weight:600">${s.count}</td>
+      <td style="color:var(--muted)">${Math.round(s.count/total*100)}%</td>
+      <td style="font-weight:600;color:var(--green)">${fmtCur(s.totalRev)}</td>
+      <td>${fmtCur(s.avgOrder)}</td>
+      <td>${s.avgFreq.toFixed(1)}x</td>
+      <td style="color:var(--muted)">${Math.round(s.avgRecency)}d</td>
+    </tr>`;
+  }).join('');
+
+  const recB={'0–30d':0,'31–60d':0,'61–90d':0,'91–180d':0,'181–365d':0,'365d+':0};
+  rfmData.forEach(c=>{if(c.recency<=30)recB['0–30d']++;else if(c.recency<=60)recB['31–60d']++;else if(c.recency<=90)recB['61–90d']++;else if(c.recency<=180)recB['91–180d']++;else if(c.recency<=365)recB['181–365d']++;else recB['365d+']++;});
+  dc('recencyChart');
+  charts.recencyChart=new Chart(document.getElementById('recencyChart'),{
+    type:'bar',
+    data:{labels:Object.keys(recB),datasets:[{data:Object.values(recB),backgroundColor:['#1a4a3522','#2d6e5222','#b8860b22','#d3540022','#c0392b22','#a0989022'],borderColor:['#1a4a35','#2d6e52','#b8860b','#d35400','#c0392b','#a09890'],borderWidth:1.5,borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f0ece4'}},x:{grid:{display:false}}}}
+  });
+
+  const monB={'₹0–1K':0,'₹1K–5K':0,'₹5K–10K':0,'₹10K–25K':0,'₹25K+':0};
+  rfmData.forEach(c=>{if(c.monetary<=1000)monB['₹0–1K']++;else if(c.monetary<=5000)monB['₹1K–5K']++;else if(c.monetary<=10000)monB['₹5K–10K']++;else if(c.monetary<=25000)monB['₹10K–25K']++;else monB['₹25K+']++;});
+  dc('monetaryChart');
+  charts.monetaryChart=new Chart(document.getElementById('monetaryChart'),{
+    type:'bar',
+    data:{labels:Object.keys(monB),datasets:[{data:Object.values(monB),backgroundColor:['#a0989033','#1a3a5c22','#5b2c6f22','#b8860b22','#1a4a3522'],borderColor:['#a09890','#1a3a5c','#5b2c6f','#b8860b','#1a4a35'],borderWidth:1.5,borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f0ece4'}},x:{grid:{display:false}}}}
+  });
+}
+
+// ── CUSTOMER TAB ───────────────────────────────────────────────────────────
+function buildCustomerTab(){
+  const top10=[...rfmData].sort((a,b)=>b.monetary-a.monetary).slice(0,10);
+  document.getElementById('top10Table').innerHTML=top10.map((c,i)=>`
+    <tr>
+      <td style="font-weight:700;color:${i<3?'#b8860b':'var(--muted)'}">#${i+1}</td>
+      <td style="font-weight:500">${c.name}</td>
+      <td><span class="seg-pill" style="background:${SEG[c.segment]?.bg};color:${SEG[c.segment]?.color}">${c.segment==='Cant Lose'?"Can't Lose":c.segment}</span></td>
+      <td style="font-weight:600;color:var(--green)">${fmtCur(c.monetary)}</td>
+      <td style="color:var(--muted)">${c.frequency}x</td>
+      <td style="color:var(--muted);font-size:0.7rem">${c.lastDate}</td>
+      <td style="font-weight:600;color:var(--green2)">${c.rfmTotal}/15</td>
+    </tr>`).join('');
+
+  const atRisk=rfmData.filter(c=>c.segment==='At Risk'||c.segment==='Cant Lose').sort((a,b)=>b.monetary-a.monetary).slice(0,8);
+  document.getElementById('atRiskTable').innerHTML=atRisk.map((c,i)=>`
+    <tr>
+      <td style="font-weight:700;color:var(--red)">#${i+1}</td>
+      <td style="font-weight:500">${c.name}</td>
+      <td style="color:var(--red)">${c.recency}d ago</td>
+      <td style="font-weight:600;color:var(--green)">${fmtCur(c.monetary)}</td>
+      <td style="color:var(--muted)">${c.frequency}x</td>
+    </tr>`).join('');
+
+  dc('top10Chart');
+  charts.top10Chart=new Chart(document.getElementById('top10Chart'),{
+    type:'bar',
+    data:{labels:top10.map(c=>c.name.split(' ')[0]),datasets:[{data:top10.map(c=>c.monetary),backgroundColor:top10.map(c=>SEG[c.segment]?.bg||'#e8f2ed'),borderColor:top10.map(c=>SEG[c.segment]?.color||'#1a4a35'),borderWidth:1.5,borderRadius:6}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#f0ece4'},ticks:{callback:v=>fmtCur(v)}},y:{grid:{display:false}}}}
+  });
+
+  const tiers={'₹25K+ (High)':0,'₹10–25K (Mid)':0,'₹5–10K (Regular)':0,'< ₹5K (Low)':0};
+  rfmData.forEach(c=>{if(c.monetary>=25000)tiers['₹25K+ (High)']++;else if(c.monetary>=10000)tiers['₹10–25K (Mid)']++;else if(c.monetary>=5000)tiers['₹5–10K (Regular)']++;else tiers['< ₹5K (Low)']++;});
+  dc('tierChart');
+  charts.tierChart=new Chart(document.getElementById('tierChart'),{
+    type:'doughnut',
+    data:{labels:Object.keys(tiers),datasets:[{data:Object.values(tiers),backgroundColor:['#1a4a35cc','#2d6e52cc','#1a3a5ccc','#a09890cc'],borderColor:'#ffffff',borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{usePointStyle:true,padding:12,font:{size:11}}}},cutout:'55%'}
+  });
+}
+
+// ── RECOMMENDATIONS ────────────────────────────────────────────────────────
+function buildRecsTab(){
+  const total=rfmData.length;
+  const totalRev=rfmData.reduce((s,c)=>s+c.monetary,0);
+  const champs=segments['Champions']||{count:0,totalRev:0};
+  const atRisk=segments['At Risk']||{count:0,totalRev:0};
+  const cantLose=segments['Cant Lose']||{count:0};
+  const newC=segments['New Customers']||{count:0};
+  const hiber=segments['Hibernating']||{count:0};
+  const lost=segments['Lost']||{count:0};
+
+  const recs=[
+    {seg:'Champions',color:'#1a4a35',bg:'#e8f2ed',impact:'HIGH IMPACT',impactBg:'#e8f2ed',impactCol:'#1a4a35',
+     title:`Reward your ${champs.count} Champions — they drive ${Math.round(champs.totalRev/totalRev*100)}% of revenue`,
+     text:`Champions are irreplaceable. Create an exclusive loyalty tier, offer early access to new products, and send a personal thank-you message. It costs 5x more to acquire a new customer than retain an existing one. Every rupee spent here returns significantly more than acquisition.`},
+    {seg:'At Risk',color:'#c0392b',bg:'#fdf0ee',impact:'URGENT',impactBg:'#fdf0ee',impactCol:'#c0392b',
+     title:`Re-engage ${atRisk.count} At-Risk customers before it's too late`,
+     text:`These customers used to buy regularly and have gone quiet. Send a personalised win-back email with a 15-20% discount within 7 days. Every week of delay reduces re-engagement probability by ~5%. The revenue at stake is ${fmtCur(atRisk.totalRev)}.`},
+    {seg:"Can't Lose",color:'#d35400',bg:'#fef3ee',impact:'URGENT',impactBg:'#fef3ee',impactCol:'#d35400',
+     title:`Act immediately on ${cantLose.count} high-value customers slipping away`,
+     text:`Can't Lose customers are your biggest spenders going cold. Assign a personal account manager if possible. Offer exclusive deals and ask directly for feedback on why they've reduced engagement. Their lifetime value is irreplaceable.`},
+    {seg:'New Customers',color:'#5b2c6f',bg:'#f5f0f8',impact:'MEDIUM IMPACT',impactBg:'#f5f0f8',impactCol:'#5b2c6f',
+     title:`Convert ${newC.count} New Customers into repeat buyers in 30 days`,
+     text:`The first 30 days are critical. Send a 3-part onboarding series: thank you on day 1, product tips on day 3, special offer on day 7. Customers who buy twice within 30 days have 54% higher lifetime value.`},
+    {seg:'Hibernating & Lost',color:'#7a7568',bg:'#f5f3ef',impact:'LOW PRIORITY',impactBg:'#f5f3ef',impactCol:'#7a7568',
+     title:`Win-back campaign for ${hiber.count+lost.count} inactive customers`,
+     text:`Email win-back campaign with a strong offer. Expect 10-15% re-engagement rate. If no response after 2 campaigns, remove from active list to improve email deliverability and reduce costs.`},
+    {seg:'Potential',color:'#1a3a5c',bg:'#eef3f8',impact:'GROWTH',impactBg:'#eef3f8',impactCol:'#1a3a5c',
+     title:'Push Potential Loyalists toward their next purchase',
+     text:`Use cross-sell and upsell based on their first purchase. A loyalty points system at this stage converts Potential to Loyal at a significantly higher rate. Focus on making the second purchase frictionless.`},
+  ];
+
+  document.getElementById('recList').innerHTML=recs.map((r,i)=>`
+    <div class="rec-item">
+      <div class="rec-num">${String(i+1).padStart(2,'0')}</div>
+      <div>
+        <div class="rec-seg" style="color:${r.color}">${r.seg}</div>
+        <div class="rec-title">${r.title}</div>
+        <div class="rec-text">${r.text}</div>
+        <span class="impact-tag" style="background:${r.impactBg};color:${r.impactCol}">${r.impact}</span>
+      </div>
+    </div>`).join('');
+
+  const sorted=[...rfmData].sort((a,b)=>b.monetary-a.monetary);
+  const top20Idx=Math.ceil(sorted.length*0.2);
+  const top20Rev=sorted.slice(0,top20Idx).reduce((s,c)=>s+c.monetary,0);
+  const top20Pct=Math.round(top20Rev/totalRev*100);
+
+  document.getElementById('paretoInfo').innerHTML=`
+    <div class="prog-item"><div class="prog-row"><span>Top 20% customers</span><span style="font-weight:600;color:var(--green)">${top20Pct}% revenue</span></div><div class="prog-bar"><div class="prog-fill" style="width:${top20Pct}%;background:var(--green)"></div></div></div>
+    <div class="prog-item"><div class="prog-row"><span>Bottom 80% customers</span><span style="font-weight:600;color:var(--muted)">${100-top20Pct}% revenue</span></div><div class="prog-bar"><div class="prog-fill" style="width:${100-top20Pct}%;background:var(--muted2)"></div></div></div>
+    <div class="insight-box">
+      <div class="insight-label">Insight</div>
+      <div class="insight-text">Your top ${top20Idx} customers generate ${top20Pct}% of all revenue. ${top20Pct>70?'Classic Pareto pattern — prioritise retention of this group above all else.':'Relatively healthy spread — keep diversifying your customer base.'}</div>
+    </div>`;
+
+  const avgFreq=rfmData.reduce((s,c)=>s+c.frequency,0)/rfmData.length;
+  const avgRec=rfmData.reduce((s,c)=>s+c.recency,0)/rfmData.length;
+  const champPct=Math.round((champs.count/total)*100);
+  document.getElementById('benchmarkInfo').innerHTML=[
+    {label:'Avg Purchase Frequency',your:avgFreq.toFixed(1)+'x',bench:'4–6x ideal',pct:Math.min(avgFreq/6*100,100),color:'#2d6e52'},
+    {label:'Avg Recency (days)',your:Math.round(avgRec)+'d',bench:'< 60d ideal',pct:Math.max(100-avgRec/180*100,5),color:avgRec<60?'#1a4a35':'#c0392b'},
+    {label:'Champions %',your:champPct+'%',bench:'15–25% ideal',pct:Math.min(champPct/25*100,100),color:'#b8860b'},
+  ].map(b=>`
+    <div class="prog-item">
+      <div class="prog-row"><span>${b.label}</span><span style="font-weight:600">${b.your} <span style="color:var(--muted);font-weight:400">(${b.bench})</span></span></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${b.pct}%;background:${b.color}"></div></div>
+    </div>`).join('');
+}
+
+// ── PDF EXPORT ─────────────────────────────────────────────────────────────
+async function exportPDF(){
+  const btn=document.querySelector('.sb-export');
+  if(btn){btn.textContent='Generating...';btn.disabled=true;}
+  try{
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF('p','mm','a4');
+    const W=210, H=297, ML=12, MR=12, CW=W-ML-MR;
+    const date=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+    const total=rfmData.length;
+    const totalRev=rfmData.reduce((s,c)=>s+c.monetary,0);
+    const totalOrders=rfmData.reduce((s,c)=>s+c.frequency,0);
+    const G=[26,74,53], G2=[45,110,82], PAPER=[247,245,240], LIGHT=[232,242,237];
+    const INK=[26,26,24], MUTED=[122,117,104], MUTED2=[160,152,144];
+    const RED=[192,57,43], ORG=[211,84,0], BLU=[26,58,92], PUR=[91,44,111];
+
+    // helpers
+    const bg=(r,g,b)=>pdf.setFillColor(r,g,b);
+    const tc=(r,g,b)=>pdf.setTextColor(r,g,b);
+    const fs=s=>pdf.setFontSize(s);
+    const fb=()=>pdf.setFont('helvetica','bold');
+    const fn=()=>pdf.setFont('helvetica','normal');
+    const fi=()=>pdf.setFont('helvetica','italic');
+    const R=(x,y,w,h)=>pdf.rect(x,y,w,h,'F');
+    const RR=(x,y,w,h,r)=>pdf.roundedRect(x,y,w,h,r,r,'F');
+    const T=(t,x,y,o)=>pdf.text(String(t),x,y,o||{});
+    const wrap=(t,x,y,maxW,lineH)=>{const lines=pdf.splitTextToSize(String(t),maxW);T(lines,x,y);return y+lines.length*lineH;};
+
+    const sectionBar=(label,y,color=G)=>{
+      bg(...color);R(ML,y,CW,8);
+      fb();fs(7);tc(255,255,255);T(label,ML+4,y+5.5);
+      fn();return y+12;
+    };
+
+    const addFooter=()=>{
+      const p=pdf.getCurrentPageInfo().pageNumber;
+      const tot=pdf.getNumberOfPages();
+      bg(...PAPER);R(0,H-10,W,10);
+      bg(...G);R(0,H-10,W,0.8);
+      fn();fs(6.5);tc(...MUTED2);
+      T(`SegmentIQ  |  ${bizName}  |  RFM Customer Segmentation Report  |  ${date}`,ML,H-4);
+      T(`Page ${p}`,W-MR,H-4,{align:'right'});
+    };
+
+    const newPage=()=>{
+      pdf.addPage();
+      bg(...PAPER);R(0,0,W,H);
+      bg(...G);R(0,0,3,H);
+    };
+
+    // ── PAGE 1: COVER + KPIs + SEGMENT TABLE ─────────────────────────────
+    bg(...PAPER);R(0,0,W,H);
+    // green left strip
+    bg(...G);R(0,0,3,H);
+    // green top bar
+    bg(...G);R(0,0,W,28);
+
+    fb();fs(22);tc(255,255,255);T('SegmentIQ',ML+6,16);
+    fi();fs(10);tc(168,213,181);T('Customer Intelligence Platform',ML+6,23);
+
+    // Company + date
+    fn();fs(9);tc(...G);T(bizName,ML+6,40);
+    fn();fs(8);tc(...MUTED);T('RFM Segmentation Report  |  '+date,ML+6,48);
+
+    // KPI row — 4 cards
+    let y=58;
+    y=sectionBar('KEY METRICS',y);
+    const kpiItems=[
+      ['Total Customers',fmt(total)],
+      ['Total Revenue',fmtCur(totalRev)],
+      ['Total Orders',fmt(totalOrders)],
+      ['Avg Order Value',fmtCur(totalRev/totalOrders)],
+    ];
+    const kW=(CW-9)/4;
+    kpiItems.forEach((k,i)=>{
+      const x=ML+i*(kW+3);
+      bg(...LIGHT);RR(x,y,kW,20,2);
+      bg(...G);R(x,y,2,20);
+      fn();fs(6.5);tc(...MUTED);T(k[0],x+4,y+8);
+      fb();fs(12);tc(...G);T(k[1],x+4,y+17);
+    });
+    y+=25;
+
+    // Segment overview table
+    y=sectionBar('SEGMENT OVERVIEW',y);
+    const segOrder=['Champions','Loyal','Potential','New Customers','At Risk','Cant Lose','Hibernating','Lost'];
+    const segsP=segOrder.filter(n=>segments[n]);
+
+    // Table header
+    const sCols=[ML+2,ML+40,ML+66,ML+90,ML+122,ML+148,ML+168];
+    const sHdrs=['SEGMENT','CUSTOMERS','% BASE','REVENUE','AVG ORDER','ORDERS','RECENCY'];
+    bg(210,228,218);R(ML,y,CW,7);
+    fn();fs(6);tc(...MUTED);
+    sHdrs.forEach((h,i)=>T(h,sCols[i],y+5));
+    y+=8;
+
+    segsP.forEach((n,i)=>{
+      bg(i%2===0?247:241,i%2===0?245:239,i%2===0?240:234);R(ML,y,CW,9);
+      bg(...G);R(ML,y,2,9);
+      const s=segments[n];
+      fb();fs(7.5);tc(...G);T(n==='Cant Lose'?"Can't Lose":n,sCols[0],y+6.5);
+      fn();fs(7.5);tc(...INK);T(String(s.count),sCols[1],y+6.5);
+      tc(...MUTED);T(Math.round(s.count/total*100)+'%',sCols[2],y+6.5);
+      fb();tc(...G);T(fmtCur(s.totalRev),sCols[3],y+6.5);
+      fn();tc(...MUTED);T(fmtCur(s.avgOrder),sCols[4],y+6.5);
+      T(s.avgFreq.toFixed(1)+'x',sCols[5],y+6.5);
+      T(Math.round(s.avgRecency)+'d',sCols[6],y+6.5);
+      y+=10;
+    });
+
+    addFooter();
+
+    // ── PAGE 2: TOP 10 CUSTOMERS ──────────────────────────────────────────
+    newPage();
+    let y2=16;
+    fb();fs(16);tc(...G);T('Customer Intelligence',ML+6,y2);y2+=14;
+
+    // Top 10 table
+    y2=sectionBar('TOP 10 MOST VALUABLE CUSTOMERS',y2);
+    const t10Cols=[ML+2,ML+14,ML+64,ML+104,ML+128,ML+150,ML+176];
+    const t10Hdrs=['#','CUSTOMER NAME','SEGMENT','TOTAL SPEND','ORDERS','LAST PURCHASE','RFM SCORE'];
+    bg(210,228,218);R(ML,y2,CW,7);
+    fn();fs(6);tc(...MUTED);t10Hdrs.forEach((h,i)=>T(h,t10Cols[i],y2+5));
+    y2+=8;
+    [...rfmData].sort((a,b)=>b.monetary-a.monetary).slice(0,10).forEach((c,i)=>{
+      bg(i%2===0?247:241,i%2===0?245:239,i%2===0?240:234);R(ML,y2,CW,9);
+      // rank
+      fb();fs(7);tc(184,134,11);T('#'+(i+1),t10Cols[0],y2+6.5);
+      // name — truncate safely
+      fn();fs(7.5);tc(...INK);T((c.name||'—').substring(0,22),t10Cols[1],y2+6.5);
+      // segment
+      tc(...MUTED);T((c.segment==='Cant Lose'?"Can't Lose":c.segment||'—').substring(0,14),t10Cols[2],y2+6.5);
+      // spend
+      fb();tc(...G);T(fmtCur(c.monetary),t10Cols[3],y2+6.5);
+      // orders
+      fn();tc(...MUTED);T(c.frequency+'x',t10Cols[4],y2+6.5);
+      // date
+      T(c.lastDate||'—',t10Cols[5],y2+6.5);
+      // rfm
+      fb();tc(45,110,82);T(c.rfmTotal+'/15',t10Cols[6],y2+6.5);
+      y2+=10;
+    });
+
+    y2+=6;
+
+    // At Risk table
+    y2=sectionBar('AT-RISK & CANT LOSE CUSTOMERS — ACT NOW',y2,[192,57,43]);
+    const arCols=[ML+2,ML+14,ML+68,ML+110,ML+136,ML+162];
+    const arHdrs=['#','CUSTOMER NAME','SEGMENT','TOTAL SPEND','ORDERS','DAYS SINCE LAST BUY'];
+    bg(253,232,228);R(ML,y2,CW,7);
+    fn();fs(6);tc(...RED);arHdrs.forEach((h,i)=>T(h,arCols[i],y2+5));
+    y2+=8;
+    rfmData.filter(c=>c.segment==='At Risk'||c.segment==='Cant Lose').sort((a,b)=>b.monetary-a.monetary).slice(0,8).forEach((c,i)=>{
+      bg(i%2===0?253:249,i%2===0?244:238,i%2===0?242:237);R(ML,y2,CW,9);
+      fb();fs(7);tc(...RED);T('#'+(i+1),arCols[0],y2+6.5);
+      fn();fs(7.5);tc(...INK);T((c.name||'—').substring(0,24),arCols[1],y2+6.5);
+      tc(...RED);T(c.segment==='Cant Lose'?"Can't Lose":c.segment,arCols[2],y2+6.5);
+      fb();tc(...G);T(fmtCur(c.monetary),arCols[3],y2+6.5);
+      fn();tc(...MUTED);T(c.frequency+'x',arCols[4],y2+6.5);
+      fb();tc(...RED);T(c.recency+'d',arCols[5],y2+6.5);
+      y2+=10;
+    });
+
+    addFooter();
+
+    // ── PAGE 3: STRATEGIC RECOMMENDATIONS ────────────────────────────────
+    newPage();
+    let y3=16;
+    fb();fs(16);tc(...G);T('Strategic Recommendations',ML+6,y3);y3+=7;
+    fn();fs(8.5);tc(...MUTED);T('Data-driven actions based on your actual customer data',ML+6,y3);y3+=12;
+
+    const champs2=segments['Champions']||{count:0,totalRev:0};
+    const atRisk2=segments['At Risk']||{count:0,totalRev:0};
+    const cantL2=segments['Cant Lose']||{count:0};
+    const newC2=segments['New Customers']||{count:0};
+    const hiber2=(segments['Hibernating']?.count||0)+(segments['Lost']?.count||0);
+    const champRevPct=Math.round(champs2.totalRev/Math.max(totalRev,1)*100);
+
+    const pdfRecs=[
+      {num:'01',seg:'CHAMPIONS',color:G,
+       title:`Reward your ${champs2.count} Champions — they drive ${champRevPct}% of all revenue`,
+       text:`Champions are your most valuable customers. Create an exclusive loyalty tier, offer early product access, and send personal thank-you notes. Retaining one Champion costs 5x less than acquiring a new customer. Protect this group at all costs.`},
+      {num:'02',seg:'AT RISK',color:RED,
+       title:`Re-engage ${atRisk2.count} At-Risk customers — ${fmtCur(atRisk2.totalRev)} at stake`,
+       text:`Send a personalised win-back email with a 15-20% discount within 7 days. Every week of delay reduces re-engagement probability by 5%. These customers bought well before and can again if contacted quickly.`},
+      {num:'03',seg:"CAN'T LOSE",color:ORG,
+       title:`Act immediately on ${cantL2.count} high-value customers slipping away`,
+       text:`Can't Lose customers are big spenders going cold. Assign a personal account manager if possible. Offer exclusive deals and ask directly for feedback. Their lifetime value is irreplaceable.`},
+      {num:'04',seg:'NEW CUSTOMERS',color:PUR,
+       title:`Convert ${newC2.count} New Customers into repeat buyers within 30 days`,
+       text:`Send a 3-part onboarding series: thank you on day 1, product tips on day 3, special offer on day 7. Customers who make a second purchase within 30 days have 54% higher lifetime value.`},
+      {num:'05',seg:'HIBERNATING & LOST',color:[122,117,104],
+       title:`Win-back campaign for ${hiber2} inactive customers`,
+       text:`Run a low-cost email campaign with a strong offer. Expect 10-15% re-engagement. If no response after 2 campaigns, remove from active list to protect email deliverability.`},
+      {num:'06',seg:'POTENTIAL LOYALISTS',color:BLU,
+       title:'Push Potential customers toward their next purchase now',
+       text:`Use cross-sell and upsell based on first purchase data. A loyalty points system at this stage converts Potential to Loyal at a significantly higher rate. Make the second purchase frictionless.`},
+    ];
+
+    pdfRecs.forEach((r,i)=>{
+      const cardH=36;
+      bg(i%2===0?247:241,i%2===0?245:239,i%2===0?240:234);
+      RR(ML,y3,CW,cardH,2);
+      bg(...r.color);R(ML,y3,3,cardH);
+
+      // number badge
+      bg(...r.color);RR(ML+6,y3+4,10,10,2);
+      fb();fs(7);tc(255,255,255);T(r.num,ML+7.5,y3+11);
+
+      // segment label
+      fb();fs(6.5);tc(...r.color);T(r.seg,ML+20,y3+10);
+
+      // title
+      fb();fs(8.5);tc(...INK);
+      const titleLines=pdf.splitTextToSize(r.title,CW-28);
+      T(titleLines.slice(0,2),ML+20,y3+18);
+
+      // body text
+      fn();fs(7.5);tc(...MUTED);
+      const bodyLines=pdf.splitTextToSize(r.text,CW-28);
+      T(bodyLines.slice(0,3),ML+20,y3+28);
+
+      y3+=cardH+4;
+    });
+
+    addFooter();
+
+    // fix all footers with correct total
+    const totalPages=pdf.getNumberOfPages();
+    for(let p=1;p<=totalPages;p++){
+      pdf.setPage(p);
+      bg(...PAPER);R(0,H-10,W,10);
+      bg(...G);R(0,H-10,W,0.8);
+      fn();fs(6.5);tc(...MUTED2);
+      T(`SegmentIQ  |  ${bizName}  |  RFM Customer Segmentation Report  |  ${date}`,ML,H-4);
+      T(`Page ${p} / ${totalPages}`,W-MR,H-4,{align:'right'});
+    }
+
+    pdf.save(`${bizName.replace(/\s+/g,'_')}_SegmentIQ_Report.pdf`);
+
+  }catch(e){
+    console.error('PDF Error:',e);
+    alert('PDF generation failed: '+e.message);
+  }finally{
+    if(btn){btn.textContent='↓ Export PDF Report';btn.disabled=false;}
+  }
+}
+
+function goBack(){
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('uploadScreen').style.display='grid';
+}
+</script>
+</body>
+</html>
